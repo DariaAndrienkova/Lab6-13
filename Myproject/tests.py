@@ -1,11 +1,11 @@
-from logic import total_by_category, find_by_category, max_cost_item
+from logic import total_by_category, find_by_category, max_amount_item
 
 
 def test_logic():
     sample_records = [
-        {"date": "2025-05-31", "title": "Пирогово", "category": "музей", "cost": 200.0, "duration": 4.0, "note": ""},
-        {"date": "2025-06-01", "title": "Кафе", "category": "їжа", "cost": 150.0, "duration": 1.0, "note": ""},
-        {"date": "2025-05-20", "title": "Оперний театр", "category": "музей", "cost": 500.0, "duration": 3.0,
+        {"date": "2025-05-31", "title": "Пирогово", "category": "музей", "amount": 200.0, "duration": 4.0, "note": ""},
+        {"date": "2025-06-01", "title": "Кафе", "category": "їжа", "amount": 150.0, "duration": 1.0, "note": ""},
+        {"date": "2025-05-20", "title": "Оперний театр", "category": "музей", "amount": 500.0, "duration": 3.0,
          "note": ""}
     ]
 
@@ -21,8 +21,8 @@ def test_logic():
     empty = find_by_category(sample_records, "театр")
     assert len(empty) == 0, "Для неіснуючої категорії список має бути порожнім"
 
-    # Тести для max_cost_item
-    expensive = max_cost_item(sample_records)
+    # Тести для max_amount_item
+    expensive = max_amount_item(sample_records)
     assert expensive["title"] == "Оперний театр", "Неправильно визначено найдорожчий запис"
 
     print("Успіх: усі тести з logic.py успішно пройшли перевірку!")

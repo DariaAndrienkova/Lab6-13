@@ -5,6 +5,17 @@ import logic
 app = Flask(__name__)
 storage.init()
 
+@app.get("/")
+def index():
+    return jsonify({
+        "status": "ok",
+        "message": "API is running",
+        "endpoints": {
+            "items": "/items",
+            "report": "/report"
+        }
+    })
+
 @app.get("/items")
 def list_items():
     category = request.args.get("category")       # ?category=їжа або None
@@ -36,4 +47,4 @@ def report():
     return jsonify(logic.total_by_category(storage.load()))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=8000)
