@@ -19,7 +19,7 @@ def main():
             print("використання: python cli.py add ДАТА НАЗВА КАТЕГОРІЯ ВАРТІСТЬ ТРИВАЛІСТЬ [КОМЕНТАР]")
             return
         try:
-            cost = float(sys.argv[5])
+            amount = float(sys.argv[5])
             duration = float(sys.argv[6])
         except ValueError:
             print("помилка: вартість і тривалість мають бути числами")
@@ -31,7 +31,7 @@ def main():
             "date": sys.argv[2],
             "title": sys.argv[3],
             "category": sys.argv[4],
-            "cost": cost,
+            "amount": amount,
             "duration": duration,
             "note": note
         })
@@ -43,7 +43,7 @@ def main():
             print("Список поки порожній.")
             return
         for r in records:
-            print(f"{r['date']} | {r['title']} ({r['category']}) — {r['cost']} грн, {r['duration']} год. | {r['note']}")
+            print(f"{r['date']} | {r['title']} ({r['category']}) — {r['amount']} грн, {r['duration']} год. | {r['note']}")
 
     elif command == "find":
         if len(sys.argv) < 3:
@@ -51,7 +51,7 @@ def main():
             return
         found = logic.find_by_category(records, sys.argv[2])
         for r in found:
-            print(f"{r['date']} | {r['title']} — {r['cost']} грн ({r['duration']} год.)")
+            print(f"{r['date']} | {r['title']} — {r['amount']} грн ({r['duration']} год.)")
 
     elif command == "report":
         print("--- Витрати за категоріями ---")
@@ -62,12 +62,12 @@ def main():
         for month, total in logic.total_by_month(records).items():
             print(f"{month:<10} {total:>8.2f} грн")
 
-        expensive = logic.max_cost_item(records)
+        expensive = logic.max_amount_item(records)
         if expensive:
-            print(f"\nНайбільша витрата: {expensive['title']} ({expensive['cost']} грн)")
+            print(f"\nНайбільша витрата: {expensive['title']} ({expensive['amount']} грн)")
     else:
         print("невідома команда:", command)
 
 
-if name == "__main__":
+if __name__ == "__main__":
     main()

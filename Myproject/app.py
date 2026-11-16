@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import storage
 import logic
 
 app = Flask(__name__)
+CORS(app, origins=["https://andrienkova.pp.ua"])
 storage.init()
 
 @app.get("/")
@@ -18,7 +20,7 @@ def index():
 
 @app.get("/items")
 def list_items():
-    category = request.args.get("category")       # ?category=їжа або None
+    category = request.args.get("category")
     return jsonify(storage.load(category))
 
 @app.post("/items")
