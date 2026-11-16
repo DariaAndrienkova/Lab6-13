@@ -1,6 +1,0 @@
-tunnel: 55b4a177-978f-4089-9607-c9864599bd10
-credentials-file: C:\Users\Дар'я\.cloudflared\55b4a177-978f-4089-9607-c9864599bd10.json
-ingress:
-  - hostname: api.andrienkova.pp.ua
-    service: http://127.0.0.1:8000
-  - service: http_status:404
