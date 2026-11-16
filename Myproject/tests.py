@@ -1,32 +1,47 @@
-from logic import total_by_category, find_by_category, max_amount_item
+import logic
+
+records = [
+    {
+        "date": "2026-10-01",
+        "title": "Музей",
+        "category": "музей",
+        "cost": 200,
+        "duration": 2,
+        "comment": "Екскурсія"
+    },
+    {
+        "date": "2026-10-05",
+        "title": "Парк",
+        "category": "парк",
+        "cost": 100,
+        "duration": 1,
+        "comment": "Прогулянка"
+    },
+    {
+        "date": "2026-11-01",
+        "title": "Замок",
+        "category": "музей",
+        "cost": 300,
+        "duration": 3,
+        "comment": "Подорож"
+    }
+]
 
 
-def test_logic():
-    sample_records = [
-        {"date": "2025-05-31", "title": "Пирогово", "category": "музей", "amount": 200.0, "duration": 4.0, "note": ""},
-        {"date": "2025-06-01", "title": "Кафе", "category": "їжа", "amount": 150.0, "duration": 1.0, "note": ""},
-        {"date": "2025-05-20", "title": "Оперний театр", "category": "музей", "amount": 500.0, "duration": 3.0,
-         "note": ""}
-    ]
+# Перевірка total_by_category
+assert logic.total_by_category(records)["музей"] == 500
+assert logic.total_by_category(records)["парк"] == 100
 
-    # Тести для total_by_category
-    totals = total_by_category(sample_records)
-    assert totals["музей"] == 700.0, "Помилка підрахунку суми для музеїв"
-    assert totals["їжа"] == 150.0, "Помилка підрахунку суми для їжі"
+# Перевірка total_by_month
+assert logic.total_by_month(records)["2026-10"] == 300
+assert logic.total_by_month(records)["2026-11"] == 300
 
-    # Тести для find_by_category
-    museums = find_by_category(sample_records, "музей")
-    assert len(museums) == 2, "Має знайти рівно 2 музеї"
+# Перевірка find_by_category
+assert len(logic.find_by_category(records, "музей")) == 2
+assert len(logic.find_by_category(records, "парк")) == 1
 
-    empty = find_by_category(sample_records, "театр")
-    assert len(empty) == 0, "Для неіснуючої категорії список має бути порожнім"
+# Перевірка max_amount_item
+assert logic.max_amount_item(records)["cost"] == 300
+assert logic.max_amount_item(records)["title"] == "Замок"
 
-    # Тести для max_amount_item
-    expensive = max_amount_item(sample_records)
-    assert expensive["title"] == "Оперний театр", "Неправильно визначено найдорожчий запис"
-
-    print("Успіх: усі тести з logic.py успішно пройшли перевірку!")
-
-
-if __name__ == "__main__":
-    test_logic()
+print("Усі тести пройдено успішно!")

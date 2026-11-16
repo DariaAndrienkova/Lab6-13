@@ -1,156 +1,223 @@
 <!DOCTYPE html>
 <html lang="uk">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Трекер екскурсій та подорожей</title>
+
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
+            font-family: Arial, sans-serif;
             max-width: 900px;
             margin: 40px auto;
             padding: 20px;
+            background: #f4f4f4;
         }
+
         h1 {
-            color: #2c3e50;
             text-align: center;
         }
-        .subtitle {
-            text-align: center;
-            color: #7f8c8d;
-            margin-bottom: 30px;
-        }
-        .card {
-            background: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
-        }
-        .form-grid {
+
+        form {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 10px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
         }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group.full-width {
-            grid-column: span 2;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #34495e;
-        }
-        input, textarea {
-            width: 100%;
+
+        input, button {
             padding: 10px;
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 14px;
+            font-size: 15px;
         }
-        textarea {
-            resize: vertical;
-            height: 80px;
-        }
+
         button {
-            background-color: #27ae60;
+            cursor: pointer;
+            background: #477b65;
             color: white;
             border: none;
-            padding: 12px 20px;
-            font-size: 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: bold;
-            transition: background 0.2s;
+            border-radius: 5px;
         }
-        button:hover {
-            background-color: #219653;
-        }
+
         table {
             width: 100%;
+            margin-top: 25px;
             border-collapse: collapse;
-            background: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: white;
         }
+
         th, td {
-            padding: 12px 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
             text-align: left;
-            border-bottom: 1px solid #ecf0f1;
         }
+
         th {
-            background-color: #2c3e50;
+            background: #477b65;
             color: white;
-            font-weight: 600;
         }
-        tr:hover {
-            background-color: #f9f9f9;
+
+        #status {
+            margin-top: 15px;
         }
     </style>
 </head>
+
 <body>
 
-    <h1>🏛️ Трекер екскурсій та подорожей</h1>
-    <p class="subtitle">Облік відвіданих місць, музеїв та екскурсій</p>
+<h1>Трекер екскурсій та подорожей</h1>
 
-    <div class="card">
-        <form id="excursion-form">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="date">Дата:</label>
-                    <input type="date" id="date" required>
-                </div>
-                <div class="form-group">
-                    <label for="name">Назва (музей / місце):</label>
-                    <input type="text" id="name" placeholder="Наприклад: Пирогово" required>
-                </div>
-                <div class="form-group">
-                    <label for="category">Категорія:</label>
-                    <input type="text" id="category" placeholder="Наприклад: музей, природа" required>
-                </div>
-                <div class="form-group">
-                    <label for="cost">Вартість (грн):</label>
-                    <input type="number" id="cost" step="0.01" placeholder="200" required>
-                </div>
-                <div class="form-group">
-                    <label for="duration">Тривалість (год):</label>
-                    <input type="number" id="duration" step="0.1" placeholder="4.0" required>
-                </div>
-                <div class="form-group full-width">
-                    <label for="comment">Коментар:</label>
-                  <textarea id="comment" placeholder="Чудова прогулянка на свіжому повітрі..."></textarea>
-                </div>
-            </div>
-            <button type="submit">Додати екскурсію</button>
-        </form>
-    </div>
+<form id="form">
 
-    <div class="card">
-        <h2>Список відвіданих місць</h2>
-        <table id="excursions-table">
-            <thead>
-                <tr>
-                    <th>Дата</th>
-                    <th>Назва</th>
-                    <th>Категорія</th>
-                    <th>Вартість</th>
-                    <th>Тривалість</th>
-                    <th>Коментар</th>
-                </tr>
-            </thead>
-            <tbody id="table-body">
-                <!-- Сюди динамічно завантажуватимуться дані -->
-            </tbody>
-        </table>
-    </div>
+    <input id="date" type="date" required>
+
+    <input id="title" type="text"
+           placeholder="Назва місця" required>
+
+    <input id="category" type="text"
+           placeholder="Категорія" required>
+
+    <input id="cost" type="number"
+           placeholder="Вартість" min="0" step="0.01" required>
+
+    <input id="duration" type="number"
+           placeholder="Тривалість у годинах"
+           min="0" step="0.1" required>
+
+    <input id="comment" type="text"
+           placeholder="Коментар">
+
+    <button type="submit">Додати екскурсію</button>
+
+</form>
+
+<p id="status"></p>
+
+<table>
+
+    <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Місце</th>
+            <th>Категорія</th>
+            <th>Вартість</th>
+            <th>Тривалість</th>
+            <th>Коментар</th>
+        </tr>
+    </thead>
+
+    <tbody id="list"></tbody>
+
+</table>
+
+<script>
+
+const API = "https://api.andrienkova.pp.ua";
+
+
+async function load() {
+
+    const status = document.getElementById("status");
+
+    try {
+
+        const response = await fetch(API + "/items");
+
+        if (!response.ok) {
+            throw new Error("Не вдалося отримати записи");
+        }
+
+        const items = await response.json();
+
+        const list = document.getElementById("list");
+
+        list.replaceChildren();
+
+        for (const item of items) {
+
+            const row = document.createElement("tr");
+
+            const values = [
+                item.date,
+                item.title,
+                item.category,
+                item.cost + " грн",
+                item.duration + " год.",
+                item.comment || ""
+            ];
+
+            for (const value of values) {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                row.appendChild(cell);
+            }
+
+            list.appendChild(row);
+        }
+
+    } catch (error) {
+
+        status.textContent = "Помилка завантаження: " + error.message;
+
+    }
+}
+
+
+document.getElementById("form").addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const body = {
+        date: document.getElementById("date").value,
+        title: document.getElementById("title").value,
+        category: document.getElementById("category").value,
+        cost: document.getElementById("cost").value,
+        duration: document.getElementById("duration").value,
+        comment: document.getElementById("comment").value
+    };
+
+    const status = document.getElementById("status");
+
+    try {
+
+        const response = await fetch(API + "/items", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify(body)
+
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || "Помилка додавання");
+        }
+
+        status.textContent = "Екскурсію успішно додано!";
+
+        document.getElementById("form").reset();
+
+        await load();
+
+    } catch (error) {
+
+        status.textContent = "Помилка: " + error.message;
+
+    }
+
+});
+
+
+load();
+
+</script>
 
 </body>
 </html>

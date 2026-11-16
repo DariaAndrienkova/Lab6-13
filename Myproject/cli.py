@@ -1,72 +1,101 @@
 import sys
-import storage
+import storage_file
 import logic
-
-FILE = "data.txt"
 
 
 def main():
     if len(sys.argv) < 2:
-        print("використання: python cli.py add|list|find|report ...")
+        print("Команди: add, list, find, report")
         return
 
     command = sys.argv[1]
-    records = storage.load(FILE)
+    records = storage_file.load()
 
     if command == "add":
-        # Очікуємо: python cli.py add 2025-05-31 Пирогово музей 200 4.0 опис
+
         if len(sys.argv) < 7:
-            print("використання: python cli.py add ДАТА НАЗВА КАТЕГОРІЯ ВАРТІСТЬ ТРИВАЛІСТЬ [КОМЕНТАР]")
+            print("Використання:")
+            print("python cli.py add ДАТА НАЗВА КАТЕГОРІЯ ВАРТІСТЬ ТРИВАЛІСТЬ КОМЕНТАР")
             return
+
         try:
-            amount = float(sys.argv[5])
+            cost = float(sys.argv[5])
             duration = float(sys.argv[6])
+
+            if cost < 0 or duration < 0:
+                print("Вартість і тривалість не можуть бути від'ємними.")
+                return
+
         except ValueError:
-            print("помилка: вартість і тривалість мають бути числами")
+            print("Вартість і тривалість мають бути числами.")
             return
 
-        note = sys.argv[7] if len(sys.argv) > 7 else ""
+        comment = " ".join(sys.argv[7:]) if len(sys.argv) > 7 else ""
 
-        records.append({
+        record = {
             "date": sys.argv[2],
             "title": sys.argv[3],
             "category": sys.argv[4],
-            "amount": amount,
+            "cost": cost,
             "duration": duration,
-            "note": note
-        })
-        storage.save(FILE, records)
-        print("Запис успішно додано!")
+            "comment": comment
+        }
+
+        records.append(record)
+        storage_file.save(records)
+
+        print("Екскурсію успішно додано!")
 
     elif command == "list":
+
         if not records:
-            print("Список поки порожній.")
+            print("Записів поки немає.")
             return
-        for r in records:
-            print(f"{r['date']} | {r['title']} ({r['category']}) — {r['amount']} грн, {r['duration']} год. | {r['note']}")
+
+        for record in records:
+            print(
+                f"{record['date']} | "
+                f"{record['title']} | "
+                f"{record['category']} | "
+                f"{record['cost']} грн | "
+                f"{record['duration']} год. | "
+                f"{record['comment']}"
+            )
 
     elif command == "find":
+
         if len(sys.argv) < 3:
-            print("використання: python cli.py find КАТЕГОРІЯ")
+            print("Вкажіть категорію для пошуку.")
             return
-        found = logic.find_by_category(records, sys.argv[2])
-        for r in found:
-            print(f"{r['date']} | {r['title']} — {r['amount']} грн ({r['duration']} год.)")
+
+        result = logic.find_by_category(records, sys.argv[2])
+
+        if not result:
+            print("Нічого не знайдено.")
+        else:
+            for record in result:
+                print(record)
 
     elif command == "report":
-        print("--- Витрати за категоріями ---")
-        for cat, total in logic.total_by_category(records).items():
-            print(f"{cat:<12} {total:>8.2f} грн")
 
-        print("\n--- Витрати за місяцями ---")
+        print("Витрати за категоріями:")
+
+        for category, total in logic.total_by_category(records).items():
+            print(f"{category}: {total} грн")
+
+        print("\nВитрати за місяцями:")
+
         for month, total in logic.total_by_month(records).items():
-            print(f"{month:<10} {total:>8.2f} грн")
+            print(f"{month}: {total} грн")
 
-        expensive = logic.max_amount_item(records)
-        if expensive:
-            print(f"\nНайбільша витрата: {expensive['title']} ({expensive['amount']} грн)")
+        most_expensive = logic.max_amount_item(records)
+
+        if most_expensive:
+            print("\nНайдорожча екскурсія:")
+            print(most_expensive)
+
     else:
-        print("невідома команда:", command)
+        print("Невідома команда.")
 
 
 if __name__ == "__main__":
