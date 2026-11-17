@@ -1,4 +1,6 @@
-"""Одноразове перенесення старої бази (категорія текстом) у нову (окрема таблиця categories).
+"""Міграція з лабораторної 11: стара база (категорія текстом) -> окрема таблиця categories.
+Якщо ви вже запускали її раніше, повторно запускати не треба.
+Для лабораторної 12 (користувачі) є окремий скрипт migrate_users.py.
 
 Запуск один раз:  python migrate.py
 Скрипт сам робить копію бази в теку backups, переносить записи в одній транзакції
@@ -10,6 +12,29 @@ import os
 import sqlite3
 
 import storage
+
+
+def create_tables_v2(conn):
+    """Схема бази на момент лабораторної 11 (ще без користувачів). Заморожена навмисно:
+    ця міграція завжди дає формат лаби 11, а далі працює migrate_users.py."""
+    conn.execute("""CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE,
+        monthly_limit REAL)""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL,
+        title TEXT NOT NULL DEFAULT '',
+        category_id INTEGER NOT NULL REFERENCES categories(id),
+        amount REAL NOT NULL,
+        duration REAL NOT NULL DEFAULT 0,
+        note TEXT)""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT NOT NULL,
+        action TEXT NOT NULL,
+        item_id INTEGER,
+        details TEXT)""")
 
 
 def backup_before(path):
@@ -50,7 +75,7 @@ def main():
         conn.execute("BEGIN")
         try:
             conn.execute("ALTER TABLE items RENAME TO items_old")
-            storage.create_tables(conn)
+            create_tables_v2(conn)
             old_rows = conn.execute(
                 f"SELECT id, date, {title_sql} AS title, category, amount, "
                 f"{duration_sql} AS duration, note FROM items_old ORDER BY id").fetchall()
@@ -67,7 +92,9 @@ def main():
             if new_count != old_count or abs(new_sum - old_sum) > 1e-6:
                 raise RuntimeError(f"Не збіглося: було {old_count} записів на {old_sum}, "
                                    f"стало {new_count} на {new_sum}")
-            storage.log_action(conn, "migrate", None, f"перенесено записів: {new_count}")
+            conn.execute("INSERT INTO audit_log (ts, action, item_id, details) VALUES (?, ?, ?, ?)",
+                         (datetime.datetime.now().isoformat(timespec="seconds"), "migrate", None,
+                          f"перенесено записів: {new_count}"))
             conn.execute("COMMIT")
         except Exception:
             conn.execute("ROLLBACK")

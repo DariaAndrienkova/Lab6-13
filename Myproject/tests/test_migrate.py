@@ -2,7 +2,6 @@ import os
 import sqlite3
 
 import migrate
-import storage
 
 
 def make_old_db(path):
@@ -18,22 +17,31 @@ def make_old_db(path):
     conn.close()
 
 
+def read(path, sql):
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    try:
+        return conn.execute(sql).fetchall()
+    finally:
+        conn.close()
+
+
 def test_migrate_moves_everything_without_loss(tmp_path):
-    os.environ["DB_PATH"] = str(tmp_path / "old.db")
-    make_old_db(os.environ["DB_PATH"])
+    path = str(tmp_path / "old.db")
+    os.environ["DB_PATH"] = path
+    make_old_db(path)
     migrate.main()
-    items = storage.load()
+    items = read(path, "SELECT * FROM items ORDER BY id")
     assert len(items) == 3
-    assert items[0].title == "(без назви)"          # у старих записів назви не було
-    assert round(sum(i.amount for i in items), 2) == 350.5
-    conn = storage.connect()
-    assert conn.execute("SELECT COUNT(*) FROM categories").fetchone()[0] == 2   # музей / Музей злились
-    conn.close()
+    assert items[0]["title"] == ""                  # у старих записів назви не було
+    assert round(sum(i["amount"] for i in items), 2) == 350.5
+    assert read(path, "SELECT COUNT(*) AS n FROM categories")[0]["n"] == 2   # музей / Музей злились
 
 
 def test_migrate_twice_is_harmless(tmp_path):
-    os.environ["DB_PATH"] = str(tmp_path / "old.db")
-    make_old_db(os.environ["DB_PATH"])
+    path = str(tmp_path / "old.db")
+    os.environ["DB_PATH"] = path
+    make_old_db(path)
     migrate.main()
     migrate.main()
-    assert len(storage.load()) == 3
+    assert len(read(path, "SELECT * FROM items")) == 3

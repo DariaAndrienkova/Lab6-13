@@ -97,12 +97,49 @@
         .status { min-height: 1.4em; margin: 12px 0 0; font-weight: 600; }
         .status.ok { color: #27ae60; }
         .status.error { color: #c0392b; }
+        .hidden { display: none; }
+        .table-wrap { overflow-x: auto; }   /* на телефоні таблиця гортається вбік */
+        .topbar { display: flex; justify-content: space-between; align-items: center;
+                  margin-bottom: 20px; gap: 10px; }
+        .topbar button { width: auto; padding: 8px 16px; font-size: 14px; background: #7f8c8d; }
+        .topbar button:hover { background: #636e72; }
+        .auth-buttons { display: flex; gap: 10px; }
+        .auth-buttons button.secondary { background: #2c3e50; }
+        td button.delete { width: auto; padding: 6px 12px; font-size: 13px; background: #c0392b; }
+        td button.delete:hover { background: #a93226; }
     </style>
 </head>
 <body>
 
     <h1>🏛️ Трекер екскурсій та подорожей</h1>
     <p class="subtitle">Облік відвіданих місць, музеїв та екскурсій</p>
+
+    <!-- Вхід і реєстрація: видно, поки користувач не увійшов -->
+    <div class="card" id="auth-card">
+        <h2>Вхід</h2>
+        <form id="auth-form">
+            <div class="form-group">
+                <label for="login">Логін:</label>
+                <input type="text" id="login" autocomplete="username" minlength="3" maxlength="50" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Пароль (від 8 символів):</label>
+                <input type="password" id="password" autocomplete="current-password" minlength="8" required>
+            </div>
+            <div class="auth-buttons">
+                <button type="submit" id="login-btn">Увійти</button>
+                <button type="button" id="register-btn" class="secondary">Зареєструватися</button>
+            </div>
+            <p id="auth-status" class="status"></p>
+        </form>
+    </div>
+
+    <!-- Застосунок: видно лише після входу -->
+    <div id="app" class="hidden">
+    <div class="topbar">
+        <span>Ви увійшли як <b id="who"></b></span>
+        <button type="button" id="logout-btn">Вийти</button>
+    </div>
 
     <div class="card">
         <form id="excursion-form">
@@ -139,6 +176,7 @@
 
     <div class="card">
         <h2>Список відвіданих місць</h2>
+        <div class="table-wrap">
         <table id="excursions-table">
             <thead>
                 <tr>
@@ -148,28 +186,45 @@
                     <th>Вартість</th>
                     <th>Тривалість</th>
                     <th>Коментар</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody id="table-body">
                 <!-- Сюди динамічно завантажуватимуться дані -->
             </tbody>
         </table>
+        </div>
+    </div>
     </div>
 
 
     <script>
-        // Адреса API: на справжньому сайті це твій піддомен, локально (localhost) це Flask на 8000
+        // Адреса API: на справжньому сайті це твій піддомен, локально (localhost) це Flask на 8000.
+        // Локально пишемо саме localhost, а не 127.0.0.1: тоді сторінка й API для браузера
+        // це один "сайт" і cookie входу ходить туди-сюди.
         const API = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
-            ? "http://127.0.0.1:8000"
+            ? "http://localhost:8000"
             : "https://api.andrienkova.pp.ua";
 
+        const authCard = document.getElementById("auth-card");
+        const appBox = document.getElementById("app");
+        const authForm = document.getElementById("auth-form");
         const form = document.getElementById("excursion-form");
         const tbody = document.getElementById("table-body");
         const statusEl = document.getElementById("status");
+        const authStatus = document.getElementById("auth-status");
 
-        function showStatus(text, ok) {
-            statusEl.textContent = text;
-            statusEl.className = "status " + (ok ? "ok" : "error");
+        // Усі запити йдуть через цю функцію. credentials: "include" змушує браузер
+        // надсилати cookie входу на API. Без цього сервер бачить анонімний запит і дає 401.
+        function api(path, options = {}) {
+            const headers = {};
+            if (options.body) headers["Content-Type"] = "application/json";
+            return fetch(API + path, { credentials: "include", headers, ...options });
+        }
+
+        function show(el, text, ok) {
+            el.textContent = text;
+            el.className = "status " + (ok ? "ok" : "error");
         }
 
         function addCell(row, text) {
@@ -178,9 +233,26 @@
             row.appendChild(td);
         }
 
+        function showApp(user) {
+            document.getElementById("who").textContent = user.login;
+            authCard.classList.add("hidden");
+            appBox.classList.remove("hidden");
+            loadItems();
+        }
+
+        function showLogin() {
+            appBox.classList.add("hidden");
+            authCard.classList.remove("hidden");
+            tbody.innerHTML = "";
+        }
+
         async function loadItems() {
             try {
-                const response = await fetch(API + "/items");
+                const response = await api("/items");
+                if (response.status === 401) {      // сесія закінчилась
+                    showLogin();
+                    return;
+                }
                 if (!response.ok) {
                     throw new Error("сервер відповів " + response.status);
                 }
@@ -194,43 +266,113 @@
                     addCell(tr, item.amount + " грн");
                     addCell(tr, item.duration + " год");
                     addCell(tr, item.note || "");
+                    const td = document.createElement("td");
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "delete";
+                    btn.textContent = "Видалити";
+                    btn.addEventListener("click", () => deleteItem(item.id));
+                    td.appendChild(btn);
+                    tr.appendChild(td);
                     tbody.appendChild(tr);
                 }
             } catch (err) {
-                showStatus("Не вдалося завантажити список: " + err.message, false);
+                show(statusEl, "Не вдалося завантажити список: " + err.message, false);
             }
         }
 
+        async function deleteItem(id) {
+            if (!confirm("Видалити цей запис?")) return;
+            try {
+                const response = await api("/items/" + id, { method: "DELETE" });
+                if (!response.ok) {
+                    show(statusEl, "Не вдалося видалити (код " + response.status + ")", false);
+                    return;
+                }
+                show(statusEl, "Запис видалено", true);
+                loadItems();
+            } catch (err) {
+                show(statusEl, "Немає зв'язку з сервером: " + err.message, false);
+            }
+        }
+
+        // Вхід і реєстрація використовують одні й ті самі поля
+        async function sendAuth(path) {
+            const body = JSON.stringify({
+                login: document.getElementById("login").value,
+                password: document.getElementById("password").value,
+            });
+            try {
+                const response = await api(path, { method: "POST", body });
+                const result = await response.json();
+                if (!response.ok) {
+                    show(authStatus, "Помилка: " + result.error, false);
+                    return;
+                }
+                authForm.reset();
+                authStatus.textContent = "";
+                showApp(result);
+            } catch (err) {
+                show(authStatus, "Немає зв'язку з сервером: " + err.message, false);
+            }
+        }
+
+        authForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            sendAuth("/login");
+        });
+        document.getElementById("register-btn").addEventListener("click", () => {
+            if (authForm.reportValidity()) sendAuth("/register");   // перевіряє довжину полів
+        });
+
+        document.getElementById("logout-btn").addEventListener("click", async () => {
+            try { await api("/logout", { method: "POST" }); } catch (err) { /* все одно виходимо */ }
+            statusEl.textContent = "";
+            showLogin();
+        });
+
         form.addEventListener("submit", async (event) => {
             event.preventDefault();         // не перезавантажувати сторінку
-            const body = {
+            const body = JSON.stringify({
                 date: document.getElementById("date").value,
                 title: document.getElementById("name").value,
                 category: document.getElementById("category").value,
                 amount: document.getElementById("cost").value,
                 duration: document.getElementById("duration").value,
                 note: document.getElementById("comment").value,
-            };
+            });
             try {
-                const response = await fetch(API + "/items", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body),
-                });
+                const response = await api("/items", { method: "POST", body });
                 const result = await response.json();
-                if (!response.ok) {
-                    showStatus("Помилка: " + result.error, false);
+                if (response.status === 401) {
+                    showLogin();
                     return;
                 }
-                showStatus("Екскурсію додано", true);
+                if (!response.ok) {
+                    show(statusEl, "Помилка: " + result.error, false);
+                    return;
+                }
+                show(statusEl, "Екскурсію додано", true);
                 form.reset();
                 loadItems();
             } catch (err) {
-                showStatus("Немає зв'язку з сервером: " + err.message, false);
+                show(statusEl, "Немає зв'язку з сервером: " + err.message, false);
             }
         });
 
-        loadItems();
+        // При відкритті сторінки питаємо сервер, чи ми вже увійшли (cookie живе 7 днів)
+        (async function start() {
+            try {
+                const response = await api("/me");
+                if (response.ok) {
+                    showApp(await response.json());
+                    return;
+                }
+            } catch (err) {
+                show(authStatus, "Немає зв'язку з сервером", false);
+            }
+            showLogin();
+        })();
     </script>
 
 </body>

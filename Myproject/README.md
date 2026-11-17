@@ -21,21 +21,32 @@
 
 Файл .env у теці проєкту :
 
-    ADMIN_TOKEN=довгий_випадковий_рядок
+    SECRET_KEY=довгий_випадковий_рядок
+
 
 ## Маршрути API та перевірка через curl
+Маршрути для користувача (потрібен вхід, cookie ставить сам сервер):
 
-    curl https://api.andrienkova.pp.ua/items
-    curl "https://api.andrienkova.pp.ua/items?category=музей"
-    curl https://api.andrienkova.pp.ua/report
-    curl.exe -X POST https://api.andrienkova.pp.ua/items -H "Content-Type: application/json" --data-binary "@item.json"
+    POST /register    {"login": "...", "password": "..."}   створює користувача і входить
+    POST /login       {"login": "...", "password": "..."}   вхід
+    POST /logout                                            вихід
+    GET  /me                                                хто зараз увійшов
+    GET  /items, POST /items, DELETE /items/<id>            лише власні записи
+    GET  /report, GET /report/categories                    звіти за власними записами
 
-Помилкові запити отримують код 400 з поясненням (немає поля, текст замість числа, від'ємне число).
+Без входу всі ці маршрути (крім /register і /login) відповідають 401.
+Чужий запис видалити неможливо: відповідь 404, ніби його немає.
 
-Адміністративні маршрути (лише з цього комп'ютера або через Tailscale, з токеном):
+Адміністративні маршрути (/admin/...) працюють лише для користувача з is_admin = 1
+і лише не через Cloudflare, тобто з цього комп'ютера або через Tailscale:
 
-    curl -H "X-Admin-Token: ТОКЕН" http://127.0.0.1:8000/admin/export
-    curl -X DELETE -H "X-Admin-Token: ТОКЕН" http://127.0.0.1:8000/admin/items/5
+    curl.exe -c admin.txt -X POST https://desktop-gtelcpk.taile8bb24.ts.net/login -H "Content-Type: application/json" --data-binary "@login.json"
+    curl.exe -b admin.txt https://desktop-gtelcpk.taile8bb24.ts.net/admin/log
+    curl.exe -b admin.txt https://api.andrienkova.pp.ua/admin/log      (через тунель: 404)
+
+Адміністратором користувач стає лише так: python make_admin.py ЛОГІН на самому сервері.
+Маршруту «зробити мене адміном» немає.
+
 
 ## Резервні копії
 
@@ -43,8 +54,11 @@ python backup.py копіює базу в теку backups/ з датою в н�
 
 ## Безпека
 
-Адміністративні маршрути (/admin/export, /admin/items/<id>) доступні лише з комп'ютера власниці
-та через приватну мережу Tailscale, з токеном у заголовку X-Admin-Token.
+| Адмінка з інтернету | закрито | правило тунелю (404), перевірка CF-Connecting-IP, вхід під адміністратором (is_admin) |
+| Паролі в базі | закрито | зберігаються лише хеші (werkzeug scrypt), відкритих паролів немає |
+| Чужі дані | закрито | кожен запит має WHERE user_id = ?, чужий запис дає 404 |
+| Підроблений cookie входу | закрито | cookie підписаний SECRET_KEY з .env, Secure + HttpOnly + SameSite=Lax |
+| Підбір паролів, відкрита реєстрація | частково | однакова відповідь на неправильний логін і пароль, пароль від 8 символів; ліміт запитів Cloudflare діє на /items, а /login і /register можна додати до правила |
 
 | Загроза | Статус | Чим закрита і як перевірено |
 |---|---|---|
@@ -82,6 +96,32 @@ SQLite, файл data.db. Три таблиці:
 Зв'язок: кожен запис у `items` належить рівно одній категорії. У кожному підключенні
 увімкнено `PRAGMA foreign_keys = ON`, тож база не дозволить посилання на неіснуючу категорію.
 Назви "Музей" і "музей" вважаються однією категорією.
+### Користувачі
+
+Таблиця users: id, login (унікальний, без різниці великі/малі літери), password_hash,
+is_admin, created. Пароль у базі ніколи не зберігається, лише хеш (werkzeug, scrypt).
+У items є user_id: кожен запис належить користувачу. У audit_log є user_id:
+журнал показує, хто саме додав або видалив запис.
+
+### Вхід і cookie
+
+Після входу сервер ставить підписаний cookie з номером користувача:
+Secure (лише HTTPS), HttpOnly (JavaScript його не бачить), SameSite=Lax, живе 7 днів.
+Сайт і API на піддоменах одного домену, тому cookie ходить між ними.
+Для цього в CORS увімкнено supports_credentials, а у фронтенді кожен fetch йде з credentials: "include".
+На неправильний логін і неправильний пароль сервер відповідає однаково,
+щоб не підказувати, які логіни існують.
+
+### Міграція на користувачів (лабораторна 12)
+
+Одноразово, при зупиненому сервері:
+
+    python backup.py
+    python migrate_users.py ВАШ_ЛОГІН
+    python make_admin.py ВАШ_ЛОГІН
+
+Скрипт сам робить копію бази, створює користувача і приписує йому всі наявні записи
+в одній транзакції (перевіряє, що кількість і сума записів не змінились).
 
 ## Звіт через JOIN
 
