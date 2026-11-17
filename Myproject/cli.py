@@ -1,6 +1,8 @@
 import sys
-import storage
+
 import logic
+import storage
+from models import Item
 
 
 def main():
@@ -16,14 +18,13 @@ def main():
         if len(sys.argv) < 7:
             print("використання: python cli.py add ДАТА НАЗВА КАТЕГОРІЯ ВАРТІСТЬ ТРИВАЛІСТЬ [КОМЕНТАР]")
             return
-        try:
-            amount = float(sys.argv[5])
-            duration = float(sys.argv[6])
-        except ValueError:
-            print("помилка: вартість і тривалість мають бути числами")
-            return
         note = sys.argv[7] if len(sys.argv) > 7 else ""
-        storage.add(sys.argv[2], sys.argv[3], sys.argv[4], amount, duration, note)
+        try:
+            item = Item(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], note)
+        except ValueError as e:
+            print("помилка:", e)
+            return
+        storage.add(item)
         print("Запис успішно додано!")
 
     elif command == "list":
@@ -32,15 +33,14 @@ def main():
             print("Список поки порожній.")
             return
         for r in records:
-            print(f"{r['date']} | {r['title']} ({r['category']}) — {r['amount']} грн, "
-                  f"{r['duration']} год. | {r['note']}")
+            print(f"{r.date} | {r.title} ({r.category}) — {r.amount} грн, {r.duration} год. | {r.note}")
 
     elif command == "find":
         if len(sys.argv) < 3:
             print("використання: python cli.py find КАТЕГОРІЯ")
             return
         for r in logic.find_by_category(storage.load(), sys.argv[2]):
-            print(f"{r['date']} | {r['title']} — {r['amount']} грн ({r['duration']} год.)")
+            print(f"{r.date} | {r.title} — {r.amount} грн ({r.duration} год.)")
 
     elif command == "report":
         records = storage.load()
@@ -54,8 +54,7 @@ def main():
 
         expensive = logic.max_amount_item(records)
         if expensive:
-            print(f"\nНайбільша витрата: {expensive['title']} ({expensive['amount']} грн)")
-
+            print(f"\nНайбільша витрата: {expensive.title} ({expensive.amount} грн)")
     else:
         print("невідома команда:", command)
 
