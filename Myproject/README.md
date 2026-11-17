@@ -37,10 +37,6 @@
     curl -H "X-Admin-Token: ТОКЕН" http://127.0.0.1:8000/admin/export
     curl -X DELETE -H "X-Admin-Token: ТОКЕН" http://127.0.0.1:8000/admin/items/5
 
-## Формат даних
-
-SQLite, файл data.db, таблиця items: id, date, title, category, amount, duration, note.
-
 ## Резервні копії
 
 python backup.py копіює базу в теку backups/ з датою в назві. Щодня о 20:00 запускається планувальником Windows.
