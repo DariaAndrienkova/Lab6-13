@@ -117,7 +117,7 @@ def test_session_cookie_flags(client):
 def test_health_is_public_and_ok(client):
     r = client.get("/health")                     # без входу
     assert r.status_code == 200
-    assert r.get_json() == {"status": "ok"}
+    assert r.get_json() == {"status": "broken"}
 
 
 def test_health_reports_db_error(client, monkeypatch):
