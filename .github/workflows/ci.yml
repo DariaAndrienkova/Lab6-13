@@ -15,16 +15,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
-      - name: Встановити залежності
+      - name: Install dependencies
         run: pip install -r requirements.txt pytest
-      - name: Запустити тести
+      - name: Run tests
         run: python -m pytest -v
 
   deploy:
     needs: test
     runs-on: self-hosted
     steps:
-      - name: Оновити сервіс
+      - name: Update service
         shell: powershell
         working-directory: C:/lab/myproject-server/Myproject
         run: |
@@ -32,15 +32,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit 1 }
           docker compose up -d --build
           if ($LASTEXITCODE -ne 0) { exit 1 }
-      - name: Перевірити, що сервіс відповідає
+      - name: Check health
         shell: powershell
         run: |
           for ($i = 0; $i -lt 20; $i++) {
             try {
               $r = Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8000/health
-              if ($r.StatusCode -eq 200) { Write-Host "Сервіс працює"; exit 0 }
+              if ($r.StatusCode -eq 200) { Write-Host "Service is up"; exit 0 }
             } catch { }
             Start-Sleep -Seconds 3
           }
-          Write-Host "Сервіс не відповів"
+          Write-Host "Service did not respond"
           exit 1
