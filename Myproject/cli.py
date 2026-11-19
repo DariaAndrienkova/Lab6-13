@@ -6,15 +6,23 @@ from models import Item
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("використання: python cli.py add|list|find|report ...")
+    # Перший аргумент це логін: консольна програма працює від імені одного користувача.
+    # Пароль не питає, бо вона запускається лише на самому сервері.
+    if len(sys.argv) < 3:
+        print("використання: python cli.py ЛОГІН add|list|find|report ...")
         return
 
     storage.init()
+    user = storage.get_user_by_login(sys.argv[1])
+    if user is None:
+        print("Такого користувача немає.")
+        return
+    user_id = user["id"]
+    del sys.argv[1]                  # далі розбираємо аргументи, як і раніше
     command = sys.argv[1]
 
     if command == "add":
-        # python cli.py add 2025-05-31 Пирогово музей 200 4.0 "коментар"
+        # python cli.py ЛОГІН add 2025-05-31 Пирогово музей 200 4.0 "коментар"
         if len(sys.argv) < 7:
             print("використання: python cli.py add ДАТА НАЗВА КАТЕГОРІЯ ВАРТІСТЬ ТРИВАЛІСТЬ [КОМЕНТАР]")
             return
@@ -24,11 +32,11 @@ def main():
         except ValueError as e:
             print("помилка:", e)
             return
-        storage.add(item)
+        storage.add(item, user_id)
         print("Запис успішно додано!")
 
     elif command == "list":
-        records = storage.load()
+        records = storage.load(user_id)
         if not records:
             print("Список поки порожній.")
             return
@@ -39,11 +47,11 @@ def main():
         if len(sys.argv) < 3:
             print("використання: python cli.py find КАТЕГОРІЯ")
             return
-        for r in logic.find_by_category(storage.load(), sys.argv[2]):
+        for r in logic.find_by_category(storage.load(user_id), sys.argv[2]):
             print(f"{r.date} | {r.title} — {r.amount} грн ({r.duration} год.)")
 
     elif command == "report":
-        records = storage.load()
+        records = storage.load(user_id)
         print("--- Витрати за категоріями ---")
         for cat, total in logic.total_by_category(records).items():
             print(f"{cat:<12} {total:>8.2f} грн")

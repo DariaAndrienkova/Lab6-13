@@ -112,6 +112,26 @@ def test_session_cookie_flags(client):
     assert "SameSite=Lax" in cookie
 
 
+# ---------- /health ----------
+
+def test_health_is_public_and_ok(client):
+    r = client.get("/health")                     # без входу
+    assert r.status_code == 200
+    assert r.get_json() == {"status": "ok"}
+
+
+def test_health_reports_db_error(client, monkeypatch):
+    import app
+
+    def broken():
+        raise sqlite3.OperationalError("база недоступна")
+
+    monkeypatch.setattr(app.storage, "connect", broken)
+    r = client.get("/health")
+    assert r.status_code == 503
+    assert r.get_json() == {"status": "db_error"}
+
+
 # ---------- доступ без входу ----------
 
 def test_data_routes_require_login(client):

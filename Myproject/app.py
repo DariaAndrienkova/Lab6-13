@@ -52,6 +52,20 @@ def json_errors(e):
     return jsonify({"error": messages.get(e.code, e.name)}), e.code
 
 
+@app.get("/health")
+def health():
+    """Для зовнішнього монітора: без входу і без даних, лише чи відповідає база."""
+    try:
+        conn = storage.connect()
+        try:
+            conn.execute("SELECT 1").fetchone()
+        finally:
+            conn.close()
+        return jsonify({"status": "ok"})
+    except Exception:
+        return jsonify({"status": "db_error"}), 503
+
+
 # ---------- вхід і сесії ----------
 
 def current_user():
